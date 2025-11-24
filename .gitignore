@@ -1,0 +1,17 @@
+# .gitignore
+
+# Security: Never commit the real environment variables
+.env
+
+# Python: Ignore local virtual environments
+.venv/
+venv/
+env/
+
+# Python: Ignore compiled cache files
+__pycache__/
+*.pyc
+
+# IDE settings (Optional but recommended)
+.vscode/
+.idea/

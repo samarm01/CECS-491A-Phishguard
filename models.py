@@ -1,0 +1,48 @@
+# models.py
+from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Text
+from sqlalchemy.sql import func
+from db import Base, engine
+
+# --- TABLE 1: USERS ---
+# Matches Developer Guide: id, email, password_hash, role, created_at [cite: 229]
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default="user")  # admin, user, etc.
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- TABLE 2: EMAILS ---
+# Matches Developer Guide: id, sender, subject, body_hash, risk_score, status [cite: 230]
+class Email(Base):
+    __tablename__ = "emails"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sender = Column(String, nullable=False)
+    subject = Column(String)
+    body_hash = Column(String)  # Storing hash for efficiency
+    risk_score = Column(Float, default=0.0)
+    status = Column(String, default="pending")  # pending, safe, quarantined
+    received_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- TABLE 3: LOGS ---
+# Essential for "View Detection Logs" requirement [cite: 420]
+class Log(Base):
+    __tablename__ = "logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String, nullable=False) # e.g., "ALERT", "SYSTEM"
+    message = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- INITIALIZE DATABASE ---
+# This command actually creates the tables in Neon
+def init_db():
+    print("Creating tables in the database...")
+    Base.metadata.create_all(bind=engine)
+    print("Tables created successfully!")
+
+if __name__ == "__main__":
+    init_db()
