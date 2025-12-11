@@ -1,7 +1,7 @@
 # models.py
 from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Text
 from sqlalchemy.sql import func
-from db import Base, engine
+from api.db import Base, engine
 
 # --- TABLE 1: USERS ---
 # Matches Developer Guide: id, email, password_hash, role, created_at [cite: 229]

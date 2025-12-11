@@ -1,6 +1,6 @@
 # demo_assignment.py
-from db import SessionLocal
-from models import User, Email, init_db
+from api.db import SessionLocal
+from api.models.models import User, Email, init_db
 
 def run_demo():
     # 1. Initialize the Database (Create tables if they don't exist)

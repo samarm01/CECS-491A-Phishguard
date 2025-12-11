@@ -15,3 +15,6 @@ __pycache__/
 # IDE settings (Optional but recommended)
 .vscode/
 .idea/
+
+# Don't commit frontend libraries
+node_modules/   
