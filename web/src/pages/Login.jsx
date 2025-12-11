@@ -27,8 +27,9 @@ const Login = () => {
 
   return (
     // Background: Gradient approximation of the "Circuit" image
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-900 via-teal-800 to-green-900 p-4 font-sans">
-      
+    //<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-900 via-teal-800 to-green-900 p-4 font-sans">
+      <div className="min-h-screen flex items-center justify-center p-4 font-sans login-bg">
+        
       {/* Main Card */}
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden relative">
         
