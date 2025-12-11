@@ -9,7 +9,7 @@ function App() {
       <div className="flex bg-gray-100 min-h-screen">
         {/* Persistent Sidebar  */}
         <Sidebar />
-        
+        n
         {/* Main Content Area */}
         <main className="flex-1 ml-64">
           <Routes>
