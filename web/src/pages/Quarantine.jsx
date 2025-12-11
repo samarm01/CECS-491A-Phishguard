@@ -1,10 +1,10 @@
 // web/src/pages/Quarantine.jsx
 import React, { useState } from 'react';
-import { Search, CheckCircle, Eye, Trash2, AlertOctagon } from 'lucide-react';
+import { Search, CheckCircle, Eye, Trash2, AlertTriangle } from 'lucide-react';
+import EmailAnalysisModal from '../components/EmailAnalysisModal';
 
 const Quarantine = () => {
-  // --- DUMMY DATA: Acts as a placeholder for your future API call ---
-  [cite_start]// Matches the fields in your "emails" database table [cite: 230]
+  // --- DUMMY DATA ---
   const initialData = [
     { id: 1, sender: "support@paypal.com", subject: "Action Required: Account Danger", date: "2025-10-31", reason: "Impersonation", status: "quarantined" },
     { id: 2, sender: "microsft-security@com", subject: "Unusual Login Activity", date: "2025-10-31", reason: "Suspect Domain", status: "quarantined" },
@@ -13,6 +13,9 @@ const Quarantine = () => {
 
   const [emails, setEmails] = useState(initialData);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // State to control the Modal (Popup)
+  const [selectedEmail, setSelectedEmail] = useState(null);
 
   // Search Logic
   const filteredEmails = emails.filter(email => 
@@ -28,7 +31,7 @@ const Quarantine = () => {
         <p className="text-slate-500 mt-1">Review and manage suspicious emails blocked by PhishGuard</p>
       </div>
 
-      [cite_start]{/* Search Bar - Matches Prototype "Search by sender..." [cite: 306] */}
+      {/* Search Bar */}
       <div className="mb-6 relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search className="h-5 w-5 text-gray-400" />
@@ -76,25 +79,28 @@ const Quarantine = () => {
                 {/* Reason Pill */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                    <AlertOctagon size={12} className="mr-1" />
+                    <AlertTriangle size={12} className="mr-1" />
                     {email.reason}
                   </span>
                 </td>
 
-                [cite_start]{/* Actions Buttons - Matches Prototype Colors [cite: 316] */}
+                {/* Actions Buttons */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                   
-                  {/* Release (Green) */}
+                  {/* Release */}
                   <button className="text-green-700 bg-green-100 hover:bg-green-200 px-3 py-1 rounded-md transition-colors inline-flex items-center">
                     <CheckCircle size={14} className="mr-1.5" /> Release
                   </button>
 
-                  {/* Review (Yellow) */}
-                  <button className="text-yellow-700 bg-yellow-100 hover:bg-yellow-200 px-3 py-1 rounded-md transition-colors inline-flex items-center">
+                  {/* Review (Opens Modal) */}
+                  <button 
+                    onClick={() => setSelectedEmail(email)}
+                    className="text-yellow-700 bg-yellow-100 hover:bg-yellow-200 px-3 py-1 rounded-md transition-colors inline-flex items-center"
+                  >
                     <Eye size={14} className="mr-1.5" /> Review
                   </button>
 
-                  {/* Delete (Red) */}
+                  {/* Delete */}
                   <button className="text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-md transition-colors inline-flex items-center">
                     <Trash2 size={14} className="mr-1.5" /> Delete
                   </button>
@@ -114,6 +120,15 @@ const Quarantine = () => {
           </div>
         </div>
       </div>
+
+      {/* Render Modal if an email is selected */}
+      {selectedEmail && (
+        <EmailAnalysisModal 
+          email={selectedEmail} 
+          onClose={() => setSelectedEmail(null)} 
+        />
+      )}
+
     </div>
   );
 };

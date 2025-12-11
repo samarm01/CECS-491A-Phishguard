@@ -4,6 +4,10 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Quarantine from './pages/Quarantine';
 import Login from './pages/Login'; 
+import Logs from './pages/Logs'; 
+import TrendAnalysis from './pages/TrendAnalysis'; 
+import Settings from './pages/Settings'; 
+
 
 // We make a wrapper component to conditionally hide the Sidebar
 const Layout = ({ children }) => {
@@ -30,9 +34,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           {/* Placeholders for your next tasks */}
           <Route path="/quarantine" element={<Quarantine />} />          
-          <Route path="/logs" element={<div className="p-8">Logs Page (TODO)</div>} />
-          <Route path="/trends" element={<div className="p-8">Trends Page (TODO)</div>} />
-          <Route path="/settings" element={<div className="p-8">Settings Page (TODO)</div>} />
+          <Route path="/logs" element={<Logs />} />
+          <Route path="/trends" element={<TrendAnalysis />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </Layout>
     </Router>
