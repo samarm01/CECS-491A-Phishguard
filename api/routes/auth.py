@@ -28,11 +28,12 @@ def login():
     "access_token": token,
     "user": {
       "id": user.id,
-      "email": user.email
+      "email": user.email,
       "role": user.role
     }
   }), 200
   
+
 
 
 
