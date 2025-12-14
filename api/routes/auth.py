@@ -1,4 +1,4 @@
-from flash import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token
 from api.db import SessionLocal
 from api.models import User
@@ -33,6 +33,7 @@ def login():
     }
   }), 200
   
+
 
 
 
