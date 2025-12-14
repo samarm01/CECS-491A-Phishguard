@@ -14,7 +14,7 @@ def login():
     return jsonify({"error": "Missing email or password"}), 400
 
   db = SessionLocal()
-  user = db.query(User).filter(User.email == data["email"].first()
+  user = db.query(User).filter(User.email == data["email"]).first()
 
   if not user or not user.check_password(data["password"]):
     return jsonify({"error": "Invalid credentials"}), 401
@@ -33,6 +33,7 @@ def login():
     }
   }), 200
   
+
 
 
 
