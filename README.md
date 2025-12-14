@@ -82,13 +82,6 @@ You need to run the **Backend** and **Frontend** in two separate terminals.
 
 <!-- end list -->
 
-```
-
-### Why this update is critical:
-1.  **Dependency Hell:** It lists the exact `pip` packages needed so nobody gets `ModuleNotFoundError`.
-2.  **The "Hidden" File:** It explicitly tells people to create the `.env` file, which Git ignores. Without this instruction, nobody else can connect to your database.
-3.  **The "Two Terminal" Rule:** It clarifies that both servers must run simultaneously, preventing the "Login Failed" error you saw earlier.
-
 **Would you like me to generate a `requirements.txt` file for you?** This would allow users to just run `pip install -r requirements.txt` instead of typing out all the package names manually. [Create a React + Flask Project](https://www.youtube.com/watch?v=Q2eafQYgglM). This video is relevant because it shows the standard way to document and structure a dual-setup project like yours.
 
 
