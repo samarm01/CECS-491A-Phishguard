@@ -11,7 +11,7 @@ def login():
   data = request.get_json()
 
   if not data or not data.get("email") or not data.get("password"):
-    return jsonify({"error": Missing email or password"}), 400
+    return jsonify({"error": "Missing email or password"}), 400
 
   db = SessionLocal()
   user = db.query(User).filter(User.email == data["email"].first()
@@ -33,4 +33,5 @@ def login():
     }
   }), 200
   
+
 
