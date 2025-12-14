@@ -5,14 +5,14 @@ from api.db import Base, engine
 
 #Import Blueprints
 from api.routes.auth import auth_bp
-from api.routes.users import user_bp
+from api.routes.users import users_bp
 from api.routes.admin import admin_bp
 
 def create_app():
   app = Flask(__name__)
   app.config.from_object(Config)
 
-  JMTManager(app)
+  JWTManager(app)
 
   Base.metadata.create_all(bind=engine)
 
@@ -26,6 +26,7 @@ app = create_app()
 
 if __name__ == "__main__":
   app.run(debug=True)
+
 
 
 
