@@ -81,10 +81,3 @@ You need to run the **Backend** and **Frontend** in two separate terminals.
   * **"DB\_URL is missing"**: Make sure your `.env` file is named exactly `.env` (not `.env.txt`) and is located inside the `api/` folder.
 
 <!-- end list -->
-
-**Would you like me to generate a `requirements.txt` file for you?** This would allow users to just run `pip install -r requirements.txt` instead of typing out all the package names manually. [Create a React + Flask Project](https://www.youtube.com/watch?v=Q2eafQYgglM). This video is relevant because it shows the standard way to document and structure a dual-setup project like yours.
-
-
-
-http://googleusercontent.com/youtube_content/1
-```
