@@ -17,7 +17,7 @@ def login():
   user = db.query(User).filter(User.email == data["email"].first()
 
   if not user or not user.check_password(data["password"]):
-    return jsonify({"error": "Invalid credentials:}"), 401
+    return jsonify({"error": "Invalid credentials"}), 401
 
   token = create_access_token(
     identify=user.id,
@@ -33,5 +33,6 @@ def login():
     }
   }), 200
   
+
 
 
