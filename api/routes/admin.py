@@ -3,7 +3,7 @@ from api.services.auth import role_required
 from api.db import SessionLocal
 from api.models import User
 
-adamin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
+admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
 @admin_bp.route("/users", methods=["GET"])
 @role_required("admin")
@@ -12,7 +12,7 @@ def list_users():
   users = db.query(User).all()
 
   return jsonify([
-    {"id":, u.id, "email": u.email, "role": u.role}
+    {"id": u.id, "email": u.email, "role": u.role}
     for u in users
                  ])
 @admin_bp.route("/users/<int:user_id>/role", methods=["PATCH"])
@@ -26,5 +26,6 @@ def update_role(user_id):
   db.commit()
 
   return jsonify({"message": "Role updated"})
+
 
 
