@@ -16,7 +16,7 @@ You need to run the **Backend** and **Frontend** in two separate terminals.
 1. **Navigate to the root directory**:
    ```bash
    cd CECS-491A-Phishguard
-````
+
 
 2.  **Install Python Dependencies**:
 
