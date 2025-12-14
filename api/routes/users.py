@@ -9,7 +9,9 @@ users_bp = Blueprint("users", __name__, url_prefix="/api/users")
 @jwt_required()
 def get_profile():
   db = SessionLocal()
-  user = db.query(User).get(get_jwt_identity())
+  user_id = int(get_jwt_identity())
+  user = db.query(User).get(user_id)
+
 
   return jsonify({
     "id": user.id,
