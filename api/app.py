@@ -1,5 +1,5 @@
 from flask import Flask
-from flask_jwt extended import JWTManager
+from flask_jwt_extended import JWTManager
 from api.config import Config
 from api.db import Base, engine
 
@@ -26,5 +26,6 @@ app = create_app()
 
 if __name__ == "__main__":
   app.run(debug=True)
+
 
 
