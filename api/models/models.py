@@ -14,6 +14,13 @@ class User(Base):
     role = Column(String, default="user")  # admin, user, etc.
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    def set_password(self, password: str):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
+
+
 # --- TABLE 2: EMAILS ---
 # Matches Developer Guide: id, sender, subject, body_hash, risk_score, status [cite: 230]
 class Email(Base):
