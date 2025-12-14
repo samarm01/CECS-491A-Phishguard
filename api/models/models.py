@@ -2,6 +2,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Text
 from sqlalchemy.sql import func
 from api.db import Base, engine
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # --- TABLE 1: USERS ---
 # Matches Developer Guide: id, email, password_hash, role, created_at [cite: 229]
