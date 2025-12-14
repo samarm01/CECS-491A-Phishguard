@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt extended import jwt_required, get_jwt,identity
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from api.db import SessionLocal
 from api.models import User
 
@@ -18,7 +18,7 @@ def get_profile():
     "created_at": user.created_at.isoformat()
   })
 
-@users_bp.route("/me", methods=["PATCH"})
+@users_bp.route("/me", methods=["PATCH"])
 @jwt_required()
 def update_profile():
   data = request.get_json()
@@ -28,6 +28,6 @@ def update_profile():
   if "email" in data:
     user.email =  data["email"]
 
-db.commit()
-return jsonify({"message": "Profile updated"})
+  db.commit()
+  return jsonify({"message": "Profile updated"})
 
