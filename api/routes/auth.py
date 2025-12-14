@@ -20,7 +20,7 @@ def login():
     return jsonify({"error": "Invalid credentials"}), 401
 
   token = create_access_token(
-    identity=user.id,
+    identity=str(user.id),
     additional_claims={"role": user.role}
   )
 
@@ -33,6 +33,7 @@ def login():
     }
   }), 200
   
+
 
 
 
