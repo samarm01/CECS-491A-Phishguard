@@ -1,22 +1,38 @@
 // web/src/pages/Quarantine.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, CheckCircle, Eye, Trash2, AlertTriangle } from 'lucide-react';
 import EmailAnalysisModal from '../components/EmailAnalysisModal';
 
-const Quarantine = () => {
-  // --- DUMMY DATA ---
-  const initialData = [
-    { id: 1, sender: "support@paypal.com", subject: "Action Required: Account Danger", date: "2025-10-31", reason: "Impersonation", status: "quarantined" },
-    { id: 2, sender: "microsft-security@com", subject: "Unusual Login Activity", date: "2025-10-31", reason: "Suspect Domain", status: "quarantined" },
-    { id: 3, sender: "amazon-shipping@delivery.com", subject: "Package Problem", date: "2025-10-30", reason: "Malicious Attachment", status: "quarantined" },
-  ];
 
-  const [emails, setEmails] = useState(initialData);
+const Quarantine = () => {
+  const [emails, setEmails] = useState([]); // Start empty
   const [searchTerm, setSearchTerm] = useState('');
-  
   // State to control the Modal (Popup)
   const [selectedEmail, setSelectedEmail] = useState(null);
 
+  // --- NEW: FETCH DATA FROM API ---
+  useEffect(() => {
+    const fetchEmails = async () => {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/data/emails', {
+          headers: {
+            'Authorization': `Bearer ${token}` // Send the token!
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setEmails(data); // Replace dummy data with real DB data
+        }
+      } catch (err) {
+        console.error("Failed to fetch emails:", err);
+      }
+    };
+
+    fetchEmails();
+  }, []);
+  
   // Search Logic
   const filteredEmails = emails.filter(email => 
     email.sender.toLowerCase().includes(searchTerm.toLowerCase()) ||

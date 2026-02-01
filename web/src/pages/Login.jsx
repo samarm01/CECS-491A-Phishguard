@@ -16,14 +16,37 @@ const Login = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // TODO: Add actual authentication logic here (Jeffrey's task)
-    console.log("Logging in with:", formData);
-    
-    // For demo purposes, redirect to Dashboard
-    navigate('/');
-  };
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  try {
+    const response = await fetch('http://127.0.0.1:5000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email: formData.email, 
+        password: formData.password 
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // 1. SAVE THE TOKEN
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user_role', data.user.role);
+      
+      // 2. Redirect
+      console.log("Login Success!", data);
+      navigate('/');
+    } else {
+      alert("Login Failed: " + data.error);
+    }
+  } catch (error) {
+    console.error("Network Error:", error);
+    alert("Cannot connect to server. Is the backend running?");
+  }
+};
 
   return (
     // Background: Gradient approximation of the "Circuit" image

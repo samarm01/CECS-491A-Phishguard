@@ -2,6 +2,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Text
 from sqlalchemy.sql import func
 from api.db import Base, engine
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # --- TABLE 1: USERS ---
 # Matches Developer Guide: id, email, password_hash, role, created_at [cite: 229]
@@ -13,6 +14,13 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, default="user")  # admin, user, etc.
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def set_password(self, password: str):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
+
 
 # --- TABLE 2: EMAILS ---
 # Matches Developer Guide: id, sender, subject, body_hash, risk_score, status [cite: 230]
