@@ -5,6 +5,33 @@ import { X, ShieldAlert, CheckCircle, Trash2, AlertTriangle } from 'lucide-react
 const EmailAnalysisModal = ({ email, onClose }) => {
   if (!email) return null;
 
+  // Extract dynamic data from the analysis object provided by the API
+  const confidence = email.analysis?.confidence || 0;
+  const details = email.analysis?.details || "Detailed analysis report is being generated...";
+  const preview = email.analysis?.preview || "No preview available for this record.";
+
+  // handleFeedback (Task 11.1): Sends admin corrections to the backend
+const handleFeedback = async (isFalsePositive) => {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch(`http://localhost:5000/api/data/emails/${email.id}/feedback`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` 
+      },
+      body: JSON.stringify({ is_false_positive: isFalsePositive })
+    });
+
+    if (response.ok) {
+      alert("Feedback submitted successfully.");
+      onClose();
+      window.location.reload(); 
+    }
+  } catch (error) {
+    console.error("Feedback error:", error);
+  }
+};
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -39,52 +66,52 @@ const EmailAnalysisModal = ({ email, onClose }) => {
             </div>
           </div>
 
-          {/* Risk Score Banner */}
+          {/* Risk Score Banner - Dynamic Confidence (Task 10.1) */}
           <div className="bg-red-50 border border-red-100 rounded-lg p-4 flex items-start space-x-3">
             <AlertTriangle className="text-red-600 mt-0.5" size={20} />
             <div>
-              <h3 className="text-red-900 font-bold text-sm">High Risk Detected (95% Confidence)</h3>
+              <h3 className="text-red-900 font-bold text-sm">
+                Threat Detected ({confidence}% Confidence)
+              </h3>
               <p className="text-red-700 text-sm mt-1">
                 Reason: <span className="font-semibold">{email.reason}</span>
               </p>
             </div>
           </div>
 
-          {/* Analysis Details (The "Explainability" Part) */}
+          {/* Analysis Details - Logic Mapping (Task 10.2) */}
           <div>
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">Analysis Details</h3>
             <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded border border-slate-100">
-              This email was flagged because the sender's domain (paypaI.com) uses a capital 'I' instead of a lowercase 'l' to impersonate the legitimate paypal.com domain.
+              {details}
             </p>
           </div>
 
-          {/* Safe Preview */}
+          {/* Safe Preview - Displays the actual 'body' from the DB (Task 10.1) */}
           <div>
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-2">Safe Preview (Plain Text)</h3>
             <div className="bg-gray-100 p-4 rounded border border-gray-200 font-mono text-xs text-gray-700 whitespace-pre-wrap h-32 overflow-y-auto">
-{`Dear Valued Customer,
-
-We noticed unusual activity on your account. Please click here to verify your information:
-http://evil.link.totallystealyourdata.ru
-
-Please act fast or your account will be deleted within 14 days.
-
-[paypal_logo.png]
-Paypal Inc.`}
+              {preview}
             </div>
           </div>
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer Actions (Task 11.1) */}
         <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end space-x-3">
           <button onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg font-medium transition-colors">
             Close
           </button>
-          <button className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg font-medium flex items-center transition-colors shadow-sm">
-            <CheckCircle size={16} className="mr-2" /> Release
+          <button 
+            onClick={() => handleFeedback(true)} 
+            className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg font-medium flex items-center transition-colors shadow-sm"
+          >
+            <CheckCircle size={16} className="mr-2" /> Release (False Positive)
           </button>
-          <button className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg font-medium flex items-center transition-colors shadow-sm">
-            <Trash2 size={16} className="mr-2" /> Delete
+          <button 
+            onClick={() => handleFeedback(false)} 
+            className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg font-medium flex items-center transition-colors shadow-sm"
+          >
+            <Trash2 size={16} className="mr-2" /> Delete (Confirm Threat)
           </button>
         </div>
 

@@ -12,32 +12,35 @@ data_bp = Blueprint("data", __name__, url_prefix="/api/data")
 def get_stats():
     db = SessionLocal()
     
-    # 1. Counts
+    # 1. Real Counts
     total_emails = db.query(Email).count()
     threats = db.query(Email).filter(Email.risk_score > 0.7).count()
     quarantined = db.query(Email).filter(Email.status == "quarantined").count()
     
-    # 2. Chart Data (Keep dummy or calculate real if you have enough data)
-    chart_data = [
-        {"name": "Jun 01", "attempts": 4},
-        {"name": "Jun 02", "attempts": 7},
-        {"name": "Jun 03", "attempts": 2}
-    ]
+    # 2. Aggregated Chart Data (Task 9.2)
+    daily_counts = db.query(
+        func.date(Email.received_at).label('date'),
+        func.count(Email.id).label('count')
+    ).group_by(func.date(Email.received_at)).order_by(func.date(Email.received_at)).all()
 
-    # 3. RECENT QUARANTINE (Fetch top 3)
+    chart_data = [{"name": str(day.date), "attempts": day.count} for day in daily_counts]
+    if not chart_data:
+        chart_data = [{"name": "No Data", "attempts": 0}]
+
+    # 3. Recent Quarantine (Top 3)
     recent_quarantine_raw = db.query(Email).filter(Email.status == "quarantined").order_by(Email.received_at.desc()).limit(3).all()
     recent_quarantine = [{
-        "title": e.sender.split('@')[0], # Use sender name as title
+        "title": e.sender.split('@')[0],
         "subtitle": e.subject[:30] + "...",
         "badge": "High Risk" if e.risk_score > 0.9 else "Suspicious"
     } for e in recent_quarantine_raw]
 
-    # 4. RECENT LOGS (Fetch top 3)
+    # 4. Recent Logs (Top 3)
     recent_logs_raw = db.query(Log).order_by(Log.created_at.desc()).limit(3).all()
     recent_logs = [{
         "time": l.created_at.strftime("%I:%M %p"),
         "action": l.type,
-        "target": l.message[:40] + "...", # Truncate message
+        "target": l.message[:40] + "...", #truncate message 
         "type": "danger" if "FLAGGED" in l.type else "info"
     } for l in recent_logs_raw]
 
@@ -47,8 +50,8 @@ def get_stats():
         "quarantined": quarantined,
         "status": "Online",
         "chart": chart_data,
-        "recent_quarantine": recent_quarantine, # <--- Sending this to UI
-        "recent_logs": recent_logs              # <--- Sending this to UI
+        "recent_quarantine": recent_quarantine, #sent to UI
+        "recent_logs": recent_logs #sent to UI
     })
 
 # --- 2. QUARANTINE LIST ---
@@ -56,18 +59,24 @@ def get_stats():
 @jwt_required()
 def get_emails():
     db = SessionLocal()
-    # Fetch only quarantined or high-risk emails
+    # Fetch only quarantined emails
     emails = db.query(Email).filter(Email.status == "quarantined").all()
     
+    # Task 10.2: Map technical scores to descriptive strings and include the body
     return jsonify([{
         "id": e.id,
         "sender": e.sender,
         "subject": e.subject,
         "date": e.received_at.strftime("%Y-%m-%d"),
         "reason": "High Risk Score" if e.risk_score > 0.8 else "Suspicious Pattern",
-        "status": e.status
+        "status": e.status,
+        "analysis": {
+            "confidence": round(e.risk_score * 100, 1),
+            "details": f"Flagged with {round(e.risk_score * 100, 1)}% confidence due to suspicious content structure and risk indicators.",
+            "preview": e.body # <--- This sends the real body text to the UI
+        }
     } for e in emails])
-
+    
 # --- 3. LOGS LIST ---
 @data_bp.route("/logs", methods=["GET"])
 @jwt_required()
@@ -88,56 +97,63 @@ def get_logs():
 @jwt_required()
 def get_trends():
     db = SessionLocal()
-
-    # A. LINE CHART: Count emails per day (Real DB Data)
-    # This queries the database to count how many emails were received each day
+    
+    # 1. Line Data: Attempts Over Time (Task 9.2)
     daily_counts = db.query(
         func.date(Email.received_at).label('date'),
         func.count(Email.id).label('count')
-    ).group_by(func.date(Email.received_at)).all()
+    ).group_by(func.date(Email.received_at)).order_by(func.date(Email.received_at)).all()
+    
+    line_data = [{"name": str(d.date), "attempts": d.count} for d in daily_counts]
 
-    line_data = [
-        {"name": str(day.date), "attempts": day.count} 
-        for day in daily_counts
-    ]
-    # If DB is empty, provide at least one empty point to prevent chart crash
-    if not line_data:
-        line_data = [{"name": "No Data", "attempts": 0}]
-
-    # B. PIE CHART: Threat Status Distribution (Real DB Data)
-    # Counts how many are "quarantined", "safe", or "pending"
+    # 2. Pie Data: Threats by Status (Task 10.2 Logic Mapping)
     status_counts = db.query(
-        Email.status, 
-        func.count(Email.id)
+        Email.status, func.count(Email.id)
     ).group_by(Email.status).all()
-
-    # Map database statuses to colors
-    color_map = {
-        "quarantined": "#ef4444", # Red
-        "safe": "#22c55e",        # Green
-        "pending": "#f59e0b"      # Orange
-    }
-
+    
+    # Map database status to frontend colors
+    color_map = {"quarantined": "#ef4444", "safe": "#22c55e", "pending": "#f59e0b"}
     pie_data = [
-        {
-            "name": status.capitalize(), 
-            "value": count, 
-            "color": color_map.get(status, "#94a3b8")
-        } 
-        for status, count in status_counts
+        {"name": s.capitalize(), "value": c, "color": color_map.get(s, "#94a3b8")} 
+        for s, c in status_counts
     ]
 
-    # C. BAR CHART: Departments (Mock Data from API)
-    # Since we don't have 'Department' in the DB yet, we send this from the backend
-    # so the frontend is ready for it later.
-    bar_data = [
-        { "name": 'Sales', "Plant1": 15, "Plant2": 78, "Plant3": 45 },
-        { "name": 'HR', "Plant1": 22, "Plant2": 56, "Plant3": 32 },
-        { "name": 'IT', "Plant1": 56, "Plant2": 32, "Plant3": 55 },
-    ]
+    # 3. Bar Data: Targeted Departments (Task 9.4)
+    # Note: Ensure you added the 'department' column to your Email model first
+    dept_counts = db.query(
+        Email.department, func.count(Email.id)
+    ).group_by(Email.department).all()
+
+    bar_data = [{"name": d if d else "Unknown", "attempts": c} for d, c in dept_counts]
 
     return jsonify({
         "lineData": line_data,
         "pieData": pie_data,
         "barData": bar_data
     })
+
+@data_bp.route("/emails/<int:email_id>/feedback", methods=["POST"])
+@jwt_required()
+def submit_feedback(email_id):
+    data = request.get_json()
+    db = SessionLocal()
+    
+    email = db.query(Email).filter(Email.id == email_id).first()
+    if not email:
+        return jsonify({"error": "Email not found"}), 404
+        
+    # Task 11.2: Update status and mark for retraining
+    is_false_positive = data.get("is_false_positive", False)
+    email.status = "safe" if is_false_positive else "deleted"
+    email.is_false_positive = is_false_positive
+    
+    # Create an audit log for the action
+    new_log = Log(
+        type="ADMIN_FEEDBACK",
+        message=f"Email {email_id} marked as {'False Positive' if is_false_positive else 'Confirmed Threat'}.",
+        user_id=get_jwt_identity()
+    )
+    
+    db.add(new_log)
+    db.commit()
+    return jsonify({"message": "Feedback recorded successfully"})

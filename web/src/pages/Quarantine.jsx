@@ -139,9 +139,9 @@ const Quarantine = () => {
 
       {/* Render Modal if an email is selected */}
       {selectedEmail && (
-        <EmailAnalysisModal 
-          email={selectedEmail} 
-          onClose={() => setSelectedEmail(null)} 
+        <EmailAnalysisModal
+          email={selectedEmail} // This object now contains the 'analysis_report' strings
+          onClose={() => setSelectedEmail(null)}
         />
       )}
 

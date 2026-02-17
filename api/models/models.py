@@ -1,5 +1,5 @@
 # models.py
-from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Text
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, Float, ForeignKey, Text
 from sqlalchemy.sql import func
 from api.db import Base, engine
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -30,10 +30,13 @@ class Email(Base):
     id = Column(Integer, primary_key=True, index=True)
     sender = Column(String, nullable=False)
     subject = Column(String)
+    body = Column(Text)  # for the modal preview
     body_hash = Column(String)  # Storing hash for efficiency
     risk_score = Column(Float, default=0.0)
     status = Column(String, default="pending")  # pending, safe, quarantined
+    is_false_positive = Column(Boolean, default=False) # <--- ADD THIS for Feedback Task
     received_at = Column(DateTime(timezone=True), server_default=func.now())
+    department = Column(String, default="General") # <--- Add this for Task 9.4
 
 # --- TABLE 3: LOGS ---
 # Essential for "View Detection Logs" requirement [cite: 420]
