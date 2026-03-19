@@ -3,6 +3,7 @@ from sqlalchemy import Boolean, Column, Integer, String, DateTime, Float, Foreig
 from sqlalchemy.sql import func
 from api.db import Base, engine
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 # --- TABLE 1: USERS ---
 # Matches Developer Guide: id, email, password_hash, role, created_at [cite: 229]
@@ -38,6 +39,10 @@ class Email(Base):
     received_at = Column(DateTime(timezone=True), server_default=func.now())
     department = Column(String, default="General") # <--- Add this for Task 9.4
 
+ # NEW: sanitization + tags
+    body_raw = Column(Text)
+    body_sanitized = Column(Text)
+    warning_tags = Column(ARRAY(String), default=list)  # Postgres text[]
 # --- TABLE 3: LOGS ---
 # Essential for "View Detection Logs" requirement [cite: 420]
 class Log(Base):
@@ -47,6 +52,28 @@ class Log(Base):
     type = Column(String, nullable=False) # e.g., "ALERT", "SYSTEM"
     message = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True)
+    type = Column(String, nullable=False)
+    email_id = Column(Integer)
+    payload = Column(JSONB, nullable=False)
+    delivered_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+
+class EmailAction(Base):
+    __tablename__ = "email_actions"
+
+    id = Column(Integer, primary_key=True)
+    email_id = Column(Integer, nullable=False)
+    action = Column(String, nullable=False)
+    reason = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
 
 # --- INITIALIZE DATABASE ---
 # This command actually creates the tables in Neon
