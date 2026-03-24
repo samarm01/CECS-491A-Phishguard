@@ -1,22 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Mail, AlertTriangle, Shield, CheckCircle, ChevronRight } from 'lucide-react';
+import { Mail, AlertTriangle, Shield, CheckCircle, ChevronRight, Activity } from 'lucide-react';
+import { motion } from 'framer-motion'; // <-- IMPORTED FRAMER MOTION
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
-  // Initial State matches the structure sent by data.py
+  // ==========================================
+  // 📍 THE "TOP LEVEL" - ALL HOOKS GO HERE
+  // ==========================================
+
+  // 1. Initial State (Matches your backend)
   const [stats, setStats] = useState({
     scanned: 0,
     threats: 0,
     quarantined: 0,
     status: "Offline",
     chart: [],
-    recent_quarantine: [], // List for the left panel
-    recent_logs: []        // List for the right panel
+    recent_quarantine: [], 
+    recent_logs: []        
   });
 
+  // 2. System Status State (Heartbeat)
+  const [systemStatus, setSystemStatus] = useState("Checking...");
+
+  // 3. Effect: Fetch Dashboard Stats
   useEffect(() => {
     const fetchStats = async () => {
       const token = localStorage.getItem('token');
@@ -35,15 +44,73 @@ const Dashboard = () => {
     fetchStats();
   }, []);
 
+  // 4. Effect: Heartbeat Polling
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/data/heartbeat');
+        if (response.ok) {
+          const data = await response.json();
+          setSystemStatus(data.status); // Set to "Online"
+        } else {
+          setSystemStatus("Degraded");
+        }
+      } catch (err) {
+        setSystemStatus("Offline");
+      }
+    };
+
+    checkStatus(); // Initial check
+    const interval = setInterval(checkStatus, 30000); // Poll every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // ==========================================
+  // 🎬 ANIMATION VARIANTS
+  // ==========================================
+  
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15 } // Staggers the load of each section
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
+  // ==========================================
+  // 🛑 UI RENDERING
+  // ==========================================
+
   return (
-    <div className="p-8 bg-slate-50 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-slate-500 mt-1">Overview of system performance and threats</p>
-      </div>
+    <motion.div 
+      className="p-8 bg-slate-50 min-h-screen"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      <motion.div variants={itemVariants} className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-slate-500 mt-1">Overview of system performance and threats</p>
+        </div>
+        {/* Optional: A small live indicator for the heartbeat in the top right */}
+        <div className={`flex items-center px-4 py-2 rounded-full text-sm font-semibold shadow-sm border ${
+          systemStatus === 'Online' ? 'bg-green-50 text-green-700 border-green-200' : 
+          systemStatus === 'Checking...' ? 'bg-slate-50 text-slate-600 border-slate-200' :
+          'bg-red-50 text-red-700 border-red-200'
+        }`}>
+          <Activity className={`w-4 h-4 mr-2 ${systemStatus === 'Online' ? 'animate-pulse' : ''}`} />
+          API: {systemStatus}
+        </div>
+      </motion.div>
       
       {/* Clickable Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <StatCard 
           title="Emails Scanned" 
           value={stats.scanned} 
@@ -65,18 +132,19 @@ const Dashboard = () => {
           borderColor="border-orange-500" 
           onClick={() => navigate('/quarantine')}
         />
+        {/* Updated to use the live systemStatus state! */}
         <StatCard 
-          title="Status" 
-          value={stats.status} 
-          icon={<CheckCircle className={stats.status === "Online" ? "text-green-500" : "text-gray-400"} />} 
-          borderColor={stats.status === "Online" ? "border-green-500" : "border-gray-400"}
-          valueColor={stats.status === "Online" ? "text-green-600" : "text-gray-600"}
+          title="System Status" 
+          value={systemStatus} 
+          icon={<CheckCircle className={systemStatus === "Online" ? "text-green-500" : "text-red-500"} />} 
+          borderColor={systemStatus === "Online" ? "border-green-500" : "border-red-500"}
+          valueColor={systemStatus === "Online" ? "text-green-600" : "text-red-600"}
           onClick={() => navigate('/settings')}
         />
-      </div>
+      </motion.div>
 
       {/* Chart Section */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+      <motion.div variants={itemVariants} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
         <h2 className="text-lg font-bold text-slate-800 mb-6">Phishing Attempt History</h2>
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -89,10 +157,10 @@ const Dashboard = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
 
       {/* RESTORED BOTTOM PANELS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Panel 1: Recently Quarantined */}
         <Panel title="Recently Quarantined Emails" onMore={() => navigate('/quarantine')}>
@@ -131,17 +199,19 @@ const Dashboard = () => {
             )}
           </div>
         </Panel>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
 // --- Sub-Components ---
 
+// Upgraded to motion.div for smoother hover physics
 const StatCard = ({ title, value, icon, borderColor, valueColor = "text-slate-900", onClick }) => (
-  <div 
-    onClick={onClick} 
-    className={`bg-white p-6 rounded-xl shadow-sm border-t-4 ${borderColor} relative overflow-hidden cursor-pointer hover:shadow-lg hover:translate-y-[-2px] transition-all duration-200`}
+  <motion.div 
+    onClick={onClick}
+    whileHover={{ y: -5, transition: { duration: 0.2 } }}
+    className={`bg-white p-6 rounded-xl shadow-sm border-t-4 ${borderColor} relative overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200`}
   >
     <div className="flex justify-between items-start">
       <div>
@@ -150,7 +220,7 @@ const StatCard = ({ title, value, icon, borderColor, valueColor = "text-slate-90
       </div>
       <div className="p-3 bg-slate-50 rounded-lg">{icon}</div>
     </div>
-  </div>
+  </motion.div>
 );
 
 const Panel = ({ title, children, onMore }) => (
@@ -195,10 +265,10 @@ const LogItem = ({ time, action, target, type }) => {
   const activeColor = colors[type] || colors.info;
 
   return (
-    <div className={`flex items-start space-x-3 p-3 rounded-md border ${activeColor.split(' ')[2]} ${activeColor.split(' ')[1]}`}>
+    <div className={`flex items-start space-x-3 p-3 rounded-md border ${activeColor.split(' ')} ${activeColor.split(' ')}`}>
       <span className="font-mono text-xs text-slate-500 mt-0.5">{time}</span>
       <div>
-        <span className={`text-xs font-bold block ${activeColor.split(' ')[0]}`}>{action}</span>
+        <span className={`text-xs font-bold block ${activeColor.split(' ')}`}>{action}</span>
         <span className="text-xs text-slate-600 font-mono break-all">{target}</span>
       </div>
     </div>

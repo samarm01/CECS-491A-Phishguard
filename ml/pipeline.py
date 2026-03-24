@@ -1,5 +1,5 @@
-from preprocessing import clean_text
-from features import extract_features
+from ml.preprocessing import clean_text
+from ml.features import extract_features
 
 
 def prepare_dataset(email_samples):

@@ -1,83 +1,74 @@
-# PhishGuard - Admin Dashboard
+# PhishGuard 🛡️
 
-## 📋 Prerequisites
-- **Node.js** (v16 or higher)
-- **Python** (v3.10 or higher)
-- **PostgreSQL Database** (Neon.tech recommended)
+PhishGuard is an enterprise-grade phishing detection and analytics dashboard. It combines a machine learning backend for threat analysis with a modern, responsive React frontend.
+
+## 🚀 Features
+* **Machine Learning Detection:** Analyzes email headers and bodies for phishing indicators.
+* **Human-in-the-Loop Retraining:** Admins can report false positives to continuously retrain the model.
+* **Explainable AI:** Provides specific, human-readable reasoning for why an email was flagged.
+* **Interactive Dashboards:** Visualizes threat trends, targeted departments, and security metrics.
+* **Exportable Reports:** Generate clean PDF incident reports and CSV data exports.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🛠️ Tech Stack
 
-You need to run the **Backend** and **Frontend** in two separate terminals.
+**Frontend (Web)**
+* React.js (Vite)
+* Tailwind CSS (Styling)
+* Recharts (Data Visualization)
+* Framer Motion (UI Animations)
+* Lucide React (Icons)
+* jsPDF & html2canvas (Report Generation)
 
-### 1️⃣ Backend Setup (The Brain)
+**Backend (API & ML)**
+* Python 3.x
+* Flask (API Routing)
+* SQLAlchemy (Database ORM)
+* Scikit-Learn (Machine Learning Models)
+* Pandas & Joblib (Data Handling & Model Saving)
 
-1. **Navigate to the root directory**:
-   ```bash
-   cd CECS-491A-Phishguard
+---
 
+## 📦 Installation & Setup
 
-2.  **Install Python Dependencies**:
+### 1. Clone the Repository
+\`\`\`bash
+git clone https://github.com/your-username/CECS-491A-Phishguard.git
+cd CECS-491A-Phishguard
+\`\`\`
 
-    ```bash
-    pip install flask flask-jwt-extended flask-cors python-dotenv sqlalchemy psycopg2-binary
-    ```
+### 2. Backend Setup (Python)
+Navigate to the root directory and install the required Python packages. It is recommended to use a virtual environment.
 
-3.  **Configure Environment Variables**:
+\`\`\`bash
+# Install all required backend packages
+pip install Flask Flask-Cors Flask-JWT-Extended SQLAlchemy scikit-learn pandas joblib
+\`\`\`
 
-      * Create a file named `.env` inside the `api/` folder.
-      * Add the following content (ask Matthew for the real credentials):
-        ```env
-        # api/.env
-        DB_URL=postgresql://neondb_owner:YOUR_PASSWORD@ep-square-frost.us-east-2.aws.neon.tech/neondb?sslmode=require
-        SECRET_KEY=dev-secret-key
-        JWT_SECRET_KEY=dev-jwt-key
-        ```
+*Note: The machine learning pipeline uses custom local modules (`ml/pipeline.py`), not the public `pipeline` pip package.*
 
-4.  **Start the Server**:
+**Start the Backend Server:**
+\`\`\`bash
+python api/app.py
+\`\`\`
+The API will run on `http://127.0.0.1:5000`.
 
-    ```bash
-    python -m api.app
-    ```
+### 3. Frontend Setup (React/Node)
+Open a new terminal window, navigate to the `web` folder, and install the Node dependencies.
 
-    *Success Message:* `Running on http://127.0.0.1:5000`
+\`\`\`bash
+cd web
+npm install
+\`\`\`
 
------
+**Start the Frontend Development Server:**
+\`\`\`bash
+npm run dev
+\`\`\`
+The application will be accessible at `http://localhost:5173`.
 
-### 2️⃣ Frontend Setup (The Interface)
+---
 
-1.  **Open a NEW terminal**.
-
-2.  **Navigate to the web directory**:
-
-    ```bash
-    cd web
-    ```
-
-3.  **Install Dependencies** (Only needed once):
-
-    ```bash
-    npm install
-    ```
-
-4.  **Start the UI**:
-
-    ```bash
-    npm run dev
-    ```
-
-    *Success Message:* `Local: http://localhost:5173/`
-
------
-
-## 🛠 Troubleshooting
-
-  * **"Backend not running?"**: Ensure you have the Python terminal open and see "Running on http://127.0.0.1:5000".
-  * **"Invalid Credentials"**: You likely need to create a local admin user. Run the helper script:
-    ```bash
-    python create_admin.py
-    ```
-  * **"DB\_URL is missing"**: Make sure your `.env` file is named exactly `.env` (not `.env.txt`) and is located inside the `api/` folder.
-
-<!-- end list -->
+## 🧠 Machine Learning Retraining
+The Logistic Regression model is designed to learn from administrator feedback. When an admin marks an email as a "False Positive" in the UI, the backend appends the extracted features to `ml/data/historical_training_data.csv` and retrains `phish_model.pkl` on the fly to prevent future misclassifications.

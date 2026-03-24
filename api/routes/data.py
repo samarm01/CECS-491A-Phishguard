@@ -2,7 +2,9 @@ from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required
 from api.db import SessionLocal
 from api.models import Email, Log, User
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func, cast, Date, text
+from ml.features import get_human_readable_reasons
+from datetime import datetime
 
 data_bp = Blueprint("data", __name__, url_prefix="/api/data")
 
@@ -59,23 +61,37 @@ def get_stats():
 @jwt_required()
 def get_emails():
     db = SessionLocal()
-    # Fetch only quarantined emails
     emails = db.query(Email).filter(Email.status == "quarantined").all()
     
-    # Task 10.2: Map technical scores to descriptive strings and include the body
-    return jsonify([{
-        "id": e.id,
-        "sender": e.sender,
-        "subject": e.subject,
-        "date": e.received_at.strftime("%Y-%m-%d"),
-        "reason": "High Risk Score" if e.risk_score > 0.8 else "Suspicious Pattern",
-        "status": e.status,
-        "analysis": {
-            "confidence": round(e.risk_score * 100, 1),
-            "details": f"Flagged with {round(e.risk_score * 100, 1)}% confidence due to suspicious content structure and risk indicators.",
-            "preview": e.body # <--- This sends the real body text to the UI
-        }
-    } for e in emails])
+    response_data = []
+    for e in emails:
+        # Assuming your Email model stores the extracted features as a dictionary.
+        # If it doesn't, you will need to re-run `extract_features(e.headers, e.body)` here.
+        email_features = e.features_dict if hasattr(e, 'features_dict') else {} 
+        
+        # Get the list of plain-English reasons
+        reasons_list = get_human_readable_reasons(email_features)
+        
+        # Combine them into a single string for the 'details' section
+        detailed_explanation = " ".join(reasons_list)
+
+        response_data.append({
+            "id": e.id,
+            "sender": e.sender,
+            "subject": e.subject,
+            "date": e.received_at.strftime("%Y-%m-%d"),
+            # Use the primary reason for the red banner
+            "reason": reasons_list if reasons_list else "Suspicious Pattern", 
+            "status": e.status,
+            "analysis": {
+                "confidence": round(e.risk_score * 100, 1),
+                # Send the combined explanation to the 'Analysis Details' section
+                "details": detailed_explanation, 
+                "preview": e.body 
+            }
+        })
+        
+    return jsonify(response_data)
     
 # --- 3. LOGS LIST ---
 @data_bp.route("/logs", methods=["GET"])
@@ -157,3 +173,30 @@ def submit_feedback(email_id):
     db.add(new_log)
     db.commit()
     return jsonify({"message": "Feedback recorded successfully"})
+
+
+# --- CONNECTION HEARTBEAT ---
+@data_bp.route("/heartbeat", methods=["GET"])
+def heartbeat():
+    """
+    Lightweight endpoint to verify the API and Database are alive.
+    """
+    db = SessionLocal()
+    try:
+        # 1. FIXED: Wrap the SQL command in text()
+        db.execute(text("SELECT 1"))
+        return jsonify({
+            "status": "Online",
+            "database": "Connected",
+            # 2. FIXED: Use Python's datetime instead of SQL func.now()
+            "timestamp": datetime.now().isoformat() 
+        }), 200
+    except Exception as e:
+        print(f"Heartbeat Error: {e}") # Prints the exact error to your terminal for debugging
+        return jsonify({
+            "status": "Degraded",
+            "database": "Disconnected",
+            "error": str(e)
+        }), 500
+    finally:
+        db.close()
