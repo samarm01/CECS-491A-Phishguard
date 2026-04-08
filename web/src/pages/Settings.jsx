@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Server, Users, RefreshCw, Power, Edit2, CheckCircle, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Settings = () => {
   const [users, setUsers] = useState([]);
   
-  // --- FETCH REAL USERS ---
   useEffect(() => {
     const fetchUsers = async () => {
       const token = localStorage.getItem('token');
       try {
-        // Note: Using the /api/admin/users endpoint from admin.py
         const response = await fetch('http://127.0.0.1:5000/api/admin/users', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -24,15 +23,29 @@ const Settings = () => {
     fetchUsers();
   }, []);
 
+  // --- Animation Variants ---
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.15 } }
+  };
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="p-8 bg-slate-50 min-h-screen">
-      <div className="mb-8">
+    <motion.div 
+      className="p-8 bg-slate-50 min-h-screen"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      <motion.div variants={itemVariants} className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
         <p className="text-slate-500 mt-1">Manage system configurations and user access</p>
-      </div>
+      </motion.div>
 
-      {/* Server Status (Visual Only for now) */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+      <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center">
           <Server className="h-5 w-5 text-slate-500 mr-2" />
           <h2 className="text-lg font-bold text-slate-800">Email Server Integration</h2>
@@ -43,10 +56,9 @@ const Settings = () => {
               <span className="text-green-600 font-bold">Connected (Neon DB)</span>
            </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* User Management (REAL DATA) */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <div className="flex items-center">
             <Users className="h-5 w-5 text-slate-500 mr-2" />
@@ -86,8 +98,8 @@ const Settings = () => {
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

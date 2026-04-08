@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Filter, Calendar, User, ArrowUpDown, ShieldAlert, CheckCircle, LogIn } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Logs = () => {
   const [logs, setLogs] = useState([]);
   const [filterType, setFilterType] = useState('ALL');
 
-  // --- FETCH REAL LOGS ---
   useEffect(() => {
     const fetchLogs = async () => {
       const token = localStorage.getItem('token');
@@ -37,14 +37,29 @@ const Logs = () => {
     }
   };
 
+  // --- Animation Variants ---
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.15 } }
+  };
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="p-8 bg-slate-50 min-h-screen">
-      <div className="mb-8">
+    <motion.div 
+      className="p-8 bg-slate-50 min-h-screen"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      <motion.div variants={itemVariants} className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Detection Logs</h1>
         <p className="text-slate-500 mt-1">Audit trail of all system activities and user actions</p>
-      </div>
+      </motion.div>
 
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-center justify-between">
+      <motion.div variants={itemVariants} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-center justify-between">
         <div className="flex space-x-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -65,9 +80,9 @@ const Logs = () => {
         <div className="text-sm text-slate-500">
           Showing <strong>{filteredLogs.length}</strong> events
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
@@ -88,8 +103,8 @@ const Logs = () => {
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
