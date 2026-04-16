@@ -7,6 +7,10 @@ const Quarantine = () => {
   const [emails, setEmails] = useState([]); 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmail, setSelectedEmail] = useState(null);
+  
+  // --- ADDED: State for Pagination ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; 
 
   useEffect(() => {
     const fetchEmails = async () => {
@@ -30,11 +34,30 @@ const Quarantine = () => {
     fetchEmails();
   }, []);
   
-  const filteredEmails = emails.filter(email => 
-    email.sender.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    email.reason.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // --- FIX 1: Crash-Safe Filtering Logic ---
+  const filteredEmails = emails.filter(email => {
+    const sender = email.sender || '';
+    const subject = email.subject || '';
+    const reasonText = Array.isArray(email.reason) ? email.reason.join(' ') : (email.reason || '');
+    
+    const search = searchTerm.toLowerCase();
+
+    return (
+      sender.toLowerCase().includes(search) ||
+      subject.toLowerCase().includes(search) ||
+      reasonText.toLowerCase().includes(search)
+    );
+  });
+
+  // Reset to page 1 whenever the user types in the search box
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // --- ADDED: Pagination Math ---
+  const totalPages = Math.ceil(filteredEmails.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentEmails = filteredEmails.slice(startIndex, startIndex + itemsPerPage);
 
   // --- Animation Variants ---
   const containerVariants = {
@@ -83,7 +106,8 @@ const Quarantine = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
-            {filteredEmails.map((email) => (
+            {/* --- CHANGED: Map over currentEmails instead of filteredEmails --- */}
+            {currentEmails.map((email) => (
               <tr key={email.id} className="hover:bg-slate-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-slate-900">{email.sender}</div>
@@ -97,7 +121,8 @@ const Quarantine = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                     <AlertTriangle size={12} className="mr-1" />
-                    {Array.isArray(email.reason) ? email.reason : email.reason}
+                    {/* --- FIX 2: Safely parse array reasons with commas --- */}
+                    {Array.isArray(email.reason) ? email.reason.join(', ') : email.reason}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
@@ -116,19 +141,40 @@ const Quarantine = () => {
                 </td>
               </tr>
             ))}
+            {currentEmails.length === 0 && (
+              <tr>
+                <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                  No quarantined emails found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         
+        {/* --- FIX 3: Working Pagination Controls --- */}
         <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
-          <span className="text-sm text-slate-500">Showing {filteredEmails.length} items</span>
+          <span className="text-sm text-slate-500">
+            Showing {filteredEmails.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, filteredEmails.length)} of {filteredEmails.length} items
+          </span>
           <div className="flex space-x-2">
-            <button className="px-3 py-1 border border-slate-300 rounded-md text-sm disabled:opacity-50" disabled>Previous</button>
-            <button className="px-3 py-1 border border-slate-300 rounded-md text-sm disabled:opacity-50" disabled>Next</button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1 || filteredEmails.length === 0}
+              className="px-3 py-1 border border-slate-300 rounded-md text-sm disabled:opacity-50 hover:bg-slate-100 transition-colors"
+            >
+              Previous
+            </button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || filteredEmails.length === 0}
+              className="px-3 py-1 border border-slate-300 rounded-md text-sm disabled:opacity-50 hover:bg-slate-100 transition-colors"
+            >
+              Next
+            </button>
           </div>
         </div>
       </motion.div>
 
-      {/* Passed the correctly updated props to the Modal! */}
       <EmailAnalysisModal
         analysisData={selectedEmail} 
         isOpen={!!selectedEmail}

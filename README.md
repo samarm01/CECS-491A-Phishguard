@@ -50,7 +50,7 @@ pip install Flask Flask-Cors Flask-JWT-Extended SQLAlchemy scikit-learn pandas j
 
 **Start the Backend Server:**
 \`\`\`bash
-python api/app.py
+python -m api.app
 \`\`\`
 The API will run on `http://127.0.0.1:5000`.
 
