@@ -1,20 +1,26 @@
-# .gitignore
-
-# Security: Never commit the real environment variables
-.env
-
-# Python: Ignore local virtual environments
+# Virtual environment
 .venv/
-venv/
-env/
 
-# Python: Ignore compiled cache files
+# Python cache
 __pycache__/
 *.pyc
 
-# IDE settings (Optional but recommended)
+# VS Code
 .vscode/
-.idea/
 
-# Don't commit frontend libraries
-node_modules/   
+# Node modules
+node_modules/
+
+# Model artifacts
+*.pkl
+
+# Large datasets
+*.csv
+
+# Environment files
+.env
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
