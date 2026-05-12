@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, CheckCircle, Eye, Trash2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Search, CheckCircle, Eye, Trash2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import EmailAnalysisModal from '../components/EmailAnalysisModal';
-// --- Task 19.1 FIX: Import the SafeViewModal ---
-import SafeViewModal from '../components/SafeViewModal';
 
 const Quarantine = () => {
   const [emails, setEmails] = useState([]); 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmail, setSelectedEmail] = useState(null);
   
-  // --- Task 19.1 FIX: State for Safe View Modal ---
-  const [safeViewEmail, setSafeViewEmail] = useState(null);
-
-  // Pagination State
+  // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; 
 
@@ -38,13 +33,50 @@ const Quarantine = () => {
 
     fetchEmails();
   }, []);
+
+  // --- NEW: Handle Release Action ---
+  const handleRelease = async (emailId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/data/emails/${emailId}/release`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        // Remove released email from the UI instantly
+        setEmails(emails.filter(e => e.id !== emailId));
+        alert("Email marked as safe and released.");
+      }
+    } catch (err) {
+      console.error("Failed to release email:", err);
+    }
+  };
+
+  // --- NEW: Handle Delete Action ---
+  const handleDelete = async (emailId) => {
+    if (!window.confirm("Are you sure you want to permanently delete this threat?")) return;
+    
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/data/emails/${emailId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        // Remove deleted email from the UI instantly
+        setEmails(emails.filter(e => e.id !== emailId));
+      }
+    } catch (err) {
+      console.error("Failed to delete email:", err);
+    }
+  };
   
-  // Crash-Safe Filtering Logic
   const filteredEmails = emails.filter(email => {
     const sender = email.sender || '';
     const subject = email.subject || '';
     const reasonText = Array.isArray(email.reason) ? email.reason.join(' ') : (email.reason || '');
-    
     const search = searchTerm.toLowerCase();
 
     return (
@@ -54,17 +86,14 @@ const Quarantine = () => {
     );
   });
 
-  // Reset to page 1 whenever the user types in the search box
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Pagination Math
   const totalPages = Math.ceil(filteredEmails.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentEmails = filteredEmails.slice(startIndex, startIndex + itemsPerPage);
 
-  // Animation Variants
   const containerVariants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.15 } }
@@ -129,7 +158,10 @@ const Quarantine = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                  <button className="text-green-700 bg-green-100 hover:bg-green-200 px-3 py-1 rounded-md transition-colors inline-flex items-center">
+                  <button 
+                    onClick={() => handleRelease(email.id)}
+                    className="text-green-700 bg-green-100 hover:bg-green-200 px-3 py-1 rounded-md transition-colors inline-flex items-center"
+                  >
                     <CheckCircle size={14} className="mr-1.5" /> Release
                   </button>
                   <button 
@@ -138,14 +170,10 @@ const Quarantine = () => {
                   >
                     <Eye size={14} className="mr-1.5" /> Review
                   </button>
-                  {/* --- Task 19.1 FIX: Added the Safe-View Trigger Button --- */}
                   <button 
-                    onClick={() => setSafeViewEmail(email)}
-                    className="text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-md transition-colors inline-flex items-center"
+                    onClick={() => handleDelete(email.id)}
+                    className="text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-md transition-colors inline-flex items-center"
                   >
-                    <ShieldAlert size={14} className="mr-1.5" /> Safe-View
-                  </button>
-                  <button className="text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-md transition-colors inline-flex items-center">
                     <Trash2 size={14} className="mr-1.5" /> Delete
                   </button>
                 </td>
@@ -161,7 +189,6 @@ const Quarantine = () => {
           </tbody>
         </table>
         
-        {/* Working Pagination Controls */}
         <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
           <span className="text-sm text-slate-500">
             Showing {filteredEmails.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, filteredEmails.length)} of {filteredEmails.length} items
@@ -185,18 +212,10 @@ const Quarantine = () => {
         </div>
       </motion.div>
 
-      {/* Existing ML Analysis Modal */}
       <EmailAnalysisModal
         analysisData={selectedEmail} 
         isOpen={!!selectedEmail}
         onClose={() => setSelectedEmail(null)}
-      />
-
-      {/* --- Task 19.1 FIX: Render the Safe-View Modal --- */}
-      <SafeViewModal
-        emailData={safeViewEmail}
-        isOpen={!!safeViewEmail}
-        onClose={() => setSafeViewEmail(null)}
       />
 
     </motion.div>

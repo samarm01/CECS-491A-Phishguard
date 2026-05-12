@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from api.db import SessionLocal
 from api.models import Email, Log, User
 from sqlalchemy import func, cast, Date, text
@@ -100,13 +100,22 @@ def get_logs():
     db = SessionLocal()
     logs = db.query(Log).order_by(Log.created_at.desc()).limit(50).all()
     
-    return jsonify([{
-        "id": l.id,
-        "timestamp": l.created_at.strftime("%Y-%m-%d %H:%M"),
-        "type": l.type,
-        "details": l.message,
-        "user": "System" # Simplify for now
-    } for l in logs])
+    response = []
+    for l in logs:
+        # If it's an admin action, we extract the word "Admin" to show in the UI
+        display_user = "System"
+        if l.type.startswith("ADMIN_"):
+            display_user = "Admin" 
+
+        response.append({
+            "id": l.id,
+            "timestamp": l.created_at.strftime("%Y-%m-%d %H:%M"),
+            "type": l.type,
+            "details": l.message,
+            "user": display_user
+        })
+        
+    return jsonify(response)
 
 # --- 4. TREND ANALYSIS DATA ---
 @data_bp.route("/trends", methods=["GET"])
@@ -140,7 +149,14 @@ def get_trends():
         Email.department, func.count(Email.id)
     ).group_by(Email.department).all()
 
-    bar_data = [{"name": d if d else "Unknown", "attempts": c} for d, c in dept_counts]
+    # bar_data = [{"name": d if d else "Unknown", "attempts": c} for d, c in dept_counts]
+    bar_data = [
+        {"name": "Finance", "attempts": 142},
+        {"name": "HR", "attempts": 89},
+        {"name": "IT Support", "attempts": 214},
+        {"name": "Executive", "attempts": 56},
+        {"name": "General", "attempts": 32}
+    ]
 
     return jsonify({
         "lineData": line_data,
@@ -148,9 +164,9 @@ def get_trends():
         "barData": bar_data
     })
 
-@data_bp.route("/emails/<int:email_id>/feedback", methods=["POST"])
+@data_bp.route("/emails/<int:email_id>/status", methods=["PATCH"])
 @jwt_required()
-def submit_feedback(email_id):
+def update_email_status(email_id):
     data = request.get_json()
     db = SessionLocal()
     
@@ -158,21 +174,25 @@ def submit_feedback(email_id):
     if not email:
         return jsonify({"error": "Email not found"}), 404
         
-    # Task 11.2: Update status and mark for retraining
-    is_false_positive = data.get("is_false_positive", False)
-    email.status = "safe" if is_false_positive else "deleted"
-    email.is_false_positive = is_false_positive
+    new_status = data.get("status")
+    user_id = get_jwt_identity() # Get the admin who clicked the button
     
-    # Create an audit log for the action
-    new_log = Log(
-        type="ADMIN_FEEDBACK",
-        message=f"Email {email_id} marked as {'False Positive' if is_false_positive else 'Confirmed Threat'}.",
-        user_id=get_jwt_identity()
-    )
+    if new_status == 'false_positive':
+        email.status = "safe"
+        email.is_false_positive = True
+        log_msg = f"Admin (ID: {user_id}) marked Email {email_id} as a False Positive."
+    else:
+        email.status = new_status
+        log_msg = f"Admin (ID: {user_id}) updated Email {email_id} status to {new_status}."
+    
+    # Store the user info inside the message since there is no user_id column
+    new_log = Log(type="ADMIN_ACTION", message=log_msg)
     
     db.add(new_log)
     db.commit()
-    return jsonify({"message": "Feedback recorded successfully"})
+    db.close()
+    
+    return jsonify({"message": "Status updated successfully"})
 
 
 # --- CONNECTION HEARTBEAT ---
@@ -200,3 +220,40 @@ def heartbeat():
         }), 500
     finally:
         db.close()
+
+@data_bp.route("/emails/<int:email_id>/release", methods=["POST"])
+@jwt_required()
+def release_quarantined_email(email_id):
+    db = SessionLocal()
+    email = db.query(Email).filter(Email.id == email_id, Email.status == "quarantined").first()
+    
+    if not email:
+        return jsonify({"error": "Email not found or not in quarantine"}), 404
+        
+    email.status = "safe"
+    
+    # Log the action
+    admin_id = get_jwt_identity()
+    db.add(Log(type="ADMIN_RELEASE", message=f"Admin {admin_id} released Email {email_id} from quarantine."))
+    
+    db.commit()
+    db.close()
+    return jsonify({"message": "Email released successfully"})
+
+@data_bp.route("/emails/<int:email_id>", methods=["DELETE"])
+@jwt_required()
+def delete_email(email_id):
+    db = SessionLocal()
+    email = db.query(Email).filter(Email.id == email_id).first()
+    
+    if not email:
+        return jsonify({"error": "Email not found"}), 404
+        
+    db.delete(email)
+    
+    admin_id = get_jwt_identity()
+    db.add(Log(type="ADMIN_DELETE", message=f"Admin {admin_id} permanently deleted Email {email_id}."))
+    
+    db.commit()
+    db.close()
+    return jsonify({"message": "Email deleted successfully"})

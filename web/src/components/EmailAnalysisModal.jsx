@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- Task 16.2: Score Visualizer UI (Embedded Component) ---
+// --- Score Visualizer UI (Embedded Component) ---
 const RiskGauge = ({ score }) => {
   let level = 'Low';
   let strokeColor = '#22c55e'; // green-500
@@ -31,7 +31,6 @@ const RiskGauge = ({ score }) => {
     <div className={`flex flex-col items-center justify-center p-3 rounded-xl border ${bgColor} border-opacity-50 min-w-[140px]`}>
       <h3 className="text-xs font-semibold text-slate-700 mb-1">Threat Score</h3>
       <div className="relative flex items-center justify-center w-20 h-20">
-        {/* Background Track */}
         <svg className="absolute inset-0 w-full h-full transform -rotate-90">
           <circle
             cx="40"
@@ -42,7 +41,6 @@ const RiskGauge = ({ score }) => {
             fill="transparent"
             className="text-slate-200"
           />
-          {/* Active Progress */}
           <circle
             cx="40"
             cy="40"
@@ -72,29 +70,36 @@ export default function EmailAnalysisModal({ analysisData, isOpen, onClose }) {
   const [isExporting, setIsExporting] = useState(false);
   const modalRef = useRef(null);
 
-  // --- FIX: Safely extract backend data variables ---
   const confidenceScore = Math.round(analysisData?.analysis?.confidence || 0);
   const isPhishing = confidenceScore >= 50;
   
-  // The backend sends 'reason' (singular), which could be an array or a string.
-  // We format it into a guaranteed array for mapping.
   const reasonsList = analysisData?.reason 
     ? (Array.isArray(analysisData.reason) ? analysisData.reason : [analysisData.reason]) 
     : [];
 
-  // --- Week 6: The Retraining Trigger Logic ---
+  // --- FIXED: Retraining Trigger Logic ---
   const handleReportFalsePositive = async () => {
     setIsRetraining(true);
+    const token = localStorage.getItem('token'); // Get the JWT token
+    
     try {
-        await fetch(`/api/data/emails/${analysisData.id}/status`, {
+        // 1. Update the status with Authentication
+        await fetch(`http://127.0.0.1:5000/api/data/emails/${analysisData.id}/status`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ status: 'false_positive' })
         });
 
-        const response = await fetch('/api/admin/retrain', {
+        // 2. Trigger the ML pipeline with Authentication
+        const response = await fetch('http://127.0.0.1:5000/api/admin/retrain', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` 
+            }
         });
         
         if (response.ok) {
@@ -111,7 +116,7 @@ export default function EmailAnalysisModal({ analysisData, isOpen, onClose }) {
     }
   };
 
-  // --- Week 7: Report Generator (PDF Export) ---
+  // --- Report Generator (PDF Export) ---
   const handleExportPDF = async () => {
     if (!modalRef.current) return;
     
@@ -156,36 +161,27 @@ export default function EmailAnalysisModal({ analysisData, isOpen, onClose }) {
             className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative"
           >
             
-            {/* Header Section */}
             <div className="flex items-center justify-between border-b pb-3 mb-4">
               <h2 className="text-xl font-bold text-gray-800">Threat Analysis Report</h2>
-              {/* FIX: Use calculated isPhishing variable */}
               <div className={`px-3 py-1 rounded-full text-sm font-semibold ${isPhishing ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                 {isPhishing ? 'Phishing Detected' : 'Clean'}
               </div>
             </div>
 
-            {/* Top Section: Metadata & Visualizer */}
             <div className="flex gap-4 mb-6">
-              {/* Email Metadata */}
               <div className="flex-1 text-sm text-gray-600 bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col justify-center">
                 <p className="mb-2"><span className="font-semibold text-gray-700">From:</span> {analysisData.sender || "Unknown Sender"}</p>
                 <p className="mb-2"><span className="font-semibold text-gray-700">Subject:</span> {analysisData.subject || "No Subject"}</p>
                 <p><span className="font-semibold text-gray-700">Date:</span> {analysisData.date || new Date().toLocaleDateString()}</p>
               </div>
-
-              {/* Score Visualizer UI */}
-              {/* FIX: Use the directly parsed confidence score */}
               <RiskGauge score={confidenceScore} />
             </div>
 
-            {/* Explainability Section */}
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
                 Detection Reasoning
               </h3>
               <ul className="space-y-3">
-                {/* FIX: Map over reasonsList properly */}
                 {reasonsList.length > 0 ? (
                   reasonsList.map((reason, index) => (
                     <li key={index} className="flex items-start text-sm text-gray-700 bg-gray-50 p-3 rounded border border-gray-100">
@@ -202,7 +198,6 @@ export default function EmailAnalysisModal({ analysisData, isOpen, onClose }) {
               </ul>
             </div>
 
-            {/* Raw Details Fallback */}
             {analysisData.analysis?.details && (
               <div className="mb-6">
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Raw Analysis Log</h3>
@@ -212,7 +207,6 @@ export default function EmailAnalysisModal({ analysisData, isOpen, onClose }) {
               </div>
             )}
 
-            {/* Action Buttons */}
             <div data-html2canvas-ignore="true" className="flex justify-end gap-2 mt-4 pt-4 border-t">
               <button 
                 onClick={onClose} 
@@ -246,7 +240,6 @@ export default function EmailAnalysisModal({ analysisData, isOpen, onClose }) {
                 )}
               </button>
             </div>
-
           </motion.div>
         </motion.div>
       )}

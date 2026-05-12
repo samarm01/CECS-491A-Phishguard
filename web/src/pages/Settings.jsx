@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Server, Users, RefreshCw, Power, Edit2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Server, Users, RefreshCw, Edit2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Settings = () => {
@@ -23,7 +23,37 @@ const Settings = () => {
     fetchUsers();
   }, []);
 
-  // --- Animation Variants ---
+  // --- FIXED: Handle Role Toggle (Use Case #4: RBAC) ---
+  const handleRoleToggle = async (userId, currentRole) => {
+    if (!window.confirm(`Are you sure you want to change this user's role?`)) return;
+
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/admin/users/${userId}/role`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ role: newRole })
+      });
+
+      if (response.ok) {
+        // Instantly update the UI without reloading the page
+        setUsers(users.map(user => 
+          user.id === userId ? { ...user, role: newRole } : user
+        ));
+      } else {
+        alert("Failed to update role. Are you sure you have admin privileges?");
+      }
+    } catch (err) {
+      console.error("Role update error:", err);
+      alert("Error connecting to server.");
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.15 } }
@@ -90,8 +120,11 @@ const Settings = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-yellow-600 hover:text-yellow-900 bg-yellow-50 hover:bg-yellow-100 px-3 py-1 rounded-md transition-colors inline-flex items-center">
-                    <Edit2 size={14} className="mr-1.5" /> Edit
+                  <button 
+                    onClick={() => handleRoleToggle(user.id, user.role)}
+                    className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition-colors inline-flex items-center"
+                  >
+                    <RefreshCw size={14} className="mr-1.5" /> Toggle Role
                   </button>
                 </td>
               </tr>
