@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Filter, Calendar, User, ArrowUpDown, ShieldAlert, CheckCircle, LogIn } from 'lucide-react';
+import { Filter, ArrowUpDown, ShieldAlert, CheckCircle, LogIn } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Logs = () => {
   const [logs, setLogs] = useState([]);
   const [filterType, setFilterType] = useState('ALL');
+  
+  // --- Task 20.2 FIX: Add Sorting State ---
+  const [sortConfig, setSortConfig] = useState({ key: 'timestamp', direction: 'desc' });
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -24,9 +27,27 @@ const Logs = () => {
     fetchLogs();
   }, []);
 
-  const filteredLogs = logs.filter(log => 
-    filterType === 'ALL' || log.type === filterType
-  );
+  // --- Task 20.2 FIX: Add Sorting Logic ---
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // --- Apply both Filtering AND Sorting ---
+  const processedLogs = [...logs]
+    .filter(log => filterType === 'ALL' || log.type === filterType)
+    .sort((a, b) => {
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
 
   const getEventBadge = (type) => {
     switch (type) {
@@ -78,7 +99,7 @@ const Logs = () => {
           </div>
         </div>
         <div className="text-sm text-slate-500">
-          Showing <strong>{filteredLogs.length}</strong> events
+          Showing <strong>{processedLogs.length}</strong> events
         </div>
       </motion.div>
 
@@ -86,14 +107,23 @@ const Logs = () => {
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Timestamp</th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Event Type</th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Details</th>
+              {/* --- Task 20.2 FIX: Clickable Sortable Headers --- */}
+              <th onClick={() => handleSort('timestamp')} className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
+                <div className="flex items-center">Timestamp <ArrowUpDown size={14} className="ml-1" /></div>
+              </th>
+              <th onClick={() => handleSort('type')} className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
+                <div className="flex items-center">Event Type <ArrowUpDown size={14} className="ml-1" /></div>
+              </th>
+              <th onClick={() => handleSort('user')} className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
+                <div className="flex items-center">User <ArrowUpDown size={14} className="ml-1" /></div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Details
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
-            {filteredLogs.map((log) => (
+            {processedLogs.map((log) => (
               <tr key={log.id} className="hover:bg-slate-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">{log.timestamp}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{getEventBadge(log.type)}</td>
@@ -101,6 +131,11 @@ const Logs = () => {
                 <td className="px-6 py-4 text-sm text-slate-600">{log.details}</td>
               </tr>
             ))}
+            {processedLogs.length === 0 && (
+              <tr>
+                <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No logs match your filter.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </motion.div>

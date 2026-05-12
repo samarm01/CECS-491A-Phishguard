@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Search, CheckCircle, Eye, Trash2, AlertTriangle } from 'lucide-react';
+import { Search, CheckCircle, Eye, Trash2, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
 import EmailAnalysisModal from '../components/EmailAnalysisModal';
+// --- Task 19.1 FIX: Import the SafeViewModal ---
+import SafeViewModal from '../components/SafeViewModal';
 
 const Quarantine = () => {
   const [emails, setEmails] = useState([]); 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmail, setSelectedEmail] = useState(null);
   
-  // --- ADDED: State for Pagination ---
+  // --- Task 19.1 FIX: State for Safe View Modal ---
+  const [safeViewEmail, setSafeViewEmail] = useState(null);
+
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; 
 
@@ -34,7 +39,7 @@ const Quarantine = () => {
     fetchEmails();
   }, []);
   
-  // --- FIX 1: Crash-Safe Filtering Logic ---
+  // Crash-Safe Filtering Logic
   const filteredEmails = emails.filter(email => {
     const sender = email.sender || '';
     const subject = email.subject || '';
@@ -54,12 +59,12 @@ const Quarantine = () => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // --- ADDED: Pagination Math ---
+  // Pagination Math
   const totalPages = Math.ceil(filteredEmails.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentEmails = filteredEmails.slice(startIndex, startIndex + itemsPerPage);
 
-  // --- Animation Variants ---
+  // Animation Variants
   const containerVariants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.15 } }
@@ -106,7 +111,6 @@ const Quarantine = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
-            {/* --- CHANGED: Map over currentEmails instead of filteredEmails --- */}
             {currentEmails.map((email) => (
               <tr key={email.id} className="hover:bg-slate-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -121,7 +125,6 @@ const Quarantine = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                     <AlertTriangle size={12} className="mr-1" />
-                    {/* --- FIX 2: Safely parse array reasons with commas --- */}
                     {Array.isArray(email.reason) ? email.reason.join(', ') : email.reason}
                   </span>
                 </td>
@@ -134,6 +137,13 @@ const Quarantine = () => {
                     className="text-yellow-700 bg-yellow-100 hover:bg-yellow-200 px-3 py-1 rounded-md transition-colors inline-flex items-center"
                   >
                     <Eye size={14} className="mr-1.5" /> Review
+                  </button>
+                  {/* --- Task 19.1 FIX: Added the Safe-View Trigger Button --- */}
+                  <button 
+                    onClick={() => setSafeViewEmail(email)}
+                    className="text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-md transition-colors inline-flex items-center"
+                  >
+                    <ShieldAlert size={14} className="mr-1.5" /> Safe-View
                   </button>
                   <button className="text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-md transition-colors inline-flex items-center">
                     <Trash2 size={14} className="mr-1.5" /> Delete
@@ -151,7 +161,7 @@ const Quarantine = () => {
           </tbody>
         </table>
         
-        {/* --- FIX 3: Working Pagination Controls --- */}
+        {/* Working Pagination Controls */}
         <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
           <span className="text-sm text-slate-500">
             Showing {filteredEmails.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, filteredEmails.length)} of {filteredEmails.length} items
@@ -175,10 +185,18 @@ const Quarantine = () => {
         </div>
       </motion.div>
 
+      {/* Existing ML Analysis Modal */}
       <EmailAnalysisModal
         analysisData={selectedEmail} 
         isOpen={!!selectedEmail}
         onClose={() => setSelectedEmail(null)}
+      />
+
+      {/* --- Task 19.1 FIX: Render the Safe-View Modal --- */}
+      <SafeViewModal
+        emailData={safeViewEmail}
+        isOpen={!!safeViewEmail}
+        onClose={() => setSafeViewEmail(null)}
       />
 
     </motion.div>

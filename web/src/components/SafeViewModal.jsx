@@ -4,6 +4,9 @@ import { X, ShieldAlert, FileText } from 'lucide-react';
 const SafeViewModal = ({ isOpen, onClose, emailData }) => {
   if (!isOpen || !emailData) return null;
 
+  // --- FIX: Safely extract the raw body from the nested analysis object ---
+  const rawPayload = emailData.analysis?.preview || "No payload data available.";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh]">
@@ -26,9 +29,10 @@ const SafeViewModal = ({ isOpen, onClose, emailData }) => {
 
         {/* Metadata */}
         <div className="p-5 border-b border-slate-100 bg-white grid grid-cols-2 gap-4 text-sm">
-          <div><span className="font-semibold text-slate-600">Sender:</span> {emailData.sender}</div>
-          <div><span className="font-semibold text-slate-600">Recipient:</span> {emailData.recipient}</div>
-          <div className="col-span-2"><span className="font-semibold text-slate-600">Subject:</span> {emailData.subject}</div>
+          <div><span className="font-semibold text-slate-600">Sender:</span> {emailData.sender || "Unknown"}</div>
+          {/* FIX: Removed 'Recipient' as the backend doesn't supply it, added Date instead */}
+          <div><span className="font-semibold text-slate-600">Date:</span> {emailData.date || "Unknown"}</div>
+          <div className="col-span-2"><span className="font-semibold text-slate-600">Subject:</span> {emailData.subject || "No Subject"}</div>
         </div>
 
         {/* Raw Content Viewer */}
@@ -40,7 +44,7 @@ const SafeViewModal = ({ isOpen, onClose, emailData }) => {
           <pre className="whitespace-pre-wrap break-words p-4 rounded-lg bg-slate-900 text-green-400 font-mono text-xs overflow-x-auto shadow-inner">
             <code>
               {/* React automatically escapes raw strings, preventing inner HTML injection here */}
-              {emailData.rawBody || "No payload data available."}
+              {rawPayload}
             </code>
           </pre>
         </div>

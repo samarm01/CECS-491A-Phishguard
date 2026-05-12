@@ -38,6 +38,7 @@ class Email(Base):
     is_false_positive = Column(Boolean, default=False) # <--- ADD THIS for Feedback Task
     received_at = Column(DateTime(timezone=True), server_default=func.now())
     department = Column(String, default="General") # <--- Add this for Task 9.4
+    features_dict = Column(JSONB, default=dict) # Store ML features as JSONB for flexibility
 
  # NEW: sanitization + tags
     body_raw = Column(Text)
